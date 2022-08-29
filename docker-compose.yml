@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./events.db:/events.db
+    expose: ["8000"]
+    labels:
+     - "traefik.enable=true"
+     - "traefik.http.routers.event-tracking.rule=Host(`ev.danya02.ru`)"
+     - "traefik.http.routers.event-tracking.entrypoints=web"
+     - "traefik.http.services.event-tracking.loadbalancer.server.port=8000"
+    networks:
+     - proxy
+
+networks:
+  proxy:
+    external: true
