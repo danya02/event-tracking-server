@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}
+Documentation
+{% endblock %}
+
+{% block content %}
+<h1>Documentation</h1>
+
+<p>This service allows you to submit HTTP requests to log events. These will be stored in a database for future analysis.</p>
+
+<p>Events are recorded on event streams. An event stream is identified by a unique name.</p>
+
+<p>
+    An event stream can be either stateful or not.
+    If stateful, the event stream represents state transitions (for example, from running to stopped and back).
+    If not, the event stream represents a sequence of points in time, with no other information attached to them; states passed to such event streams are ignored.
+</p>
+
+<p>
+    To submit an event to an event stream, a stream password is required.
+    A stream password is generated when the stream is created and is visible in the dashboard.
+</p>
+
+<p>
+    Events can be submitted using the dashboard or with an API endpoint.
+    The API endpoint needs to be supplied with: the event stream name, the password, and the state (even for non-stateful streams, in which case it is ignored).
+    There are multiple ways to provide them.
+    The value found in the first one is used, and overrides the corresponding values in the other ones (if they exist).
+</p>
+
+<ol>
+    <li>The <code>event_stream</code>, <code>password</code> and <code>state</code> keys in the POSTed JSON;</li>
+    <li>The <code>X-Event-Stream</code>, <code>X-ES-Password</code> and <code>X-ES-State</code> HTTP headers;</li>
+    <li>The <code>stream</code>, <code>password</code> and <code>state</code> query parameters;</li>
+    <li>The <code>/stream/[stream name goes here]</code>, <code>/password/[password goes here]</code> and <code>/state/[state goes here]</code> components in the path after the endpoint (you do not have to provide these if not using them, the bare endpoint will also work)</li>
+</ol>
+
+<p>
+    Requests can be done with either a GET or a POST request.
+    However, the endpoints for these cases are different:
+    you can only GET <code>/api/submit-get</code>, and POST to <code>/api/submit-post</code>.
+</p>
+
+<p>
+    After the endpoint, you must add an additional path component, which must be a single word. This chooses whether to do a dry run or actually create the event.
+<p>
+    If you would like to perform a dry run, without actually creating an event, the word must be <code>dryrun</code> or <code>test</code>.
+    If you would like to actually create the event, the word must be <code>do</code> or <code>run</code> or <code>create</code>.
+</p>
+
+<p>
+    Examples:
+    <ul>
+        <li>To create an event with a GET, passing all parameters as query string, <code>GET /api/submit-get/run?stream=mystream&password=mypassword&state=mystate</code>;</li>
+        <li>To test the submission with a POST, passing all parameters as path components, <code>POST /api/submit-post/password/mypassword/state/mystate/stream/mystream/test</code></li>
+    </ul>
+</p>
+
+{% endblock %}

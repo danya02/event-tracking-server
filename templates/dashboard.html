@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<h2>{{streams.__len__()}} streams</h2>
+
+<div>
+    <script>
+        function setState(element, stream_name, state, password) {
+            url = "{{ url_for('submit_post', path='') }}/stream/" + stream_name + "/state/" + state + "/password/" +  password + "/do";
+            fetch(url, {
+                method: 'POST'
+            }).then(function(response) {
+                element.classList.remove("btn-outline-primary");
+
+                if (response.ok) {
+                    element.classList.add("btn-success");
+                } else {
+                    element.classList.add("btn-danger");
+                }
+
+                setTimeout(function() {
+                    element.classList.remove("btn-success");
+                    element.classList.remove("btn-danger");
+                    element.classList.add("btn-outline-primary");
+                }, 2000);
+            }).catch(function(error) {
+                element.classList.remove("btn-outline-primary");
+                element.classList.add("btn-danger");
+                setTimeout(function() {
+                    element.classList.remove("btn-danger");
+                    element.classList.add("btn-outline-primary");
+                }, 2000);
+            });
+        }
+    </script>
+
+    {% for stream in streams %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{stream.name}}</h5>
+                
+                <p class="card-text">
+                    Latest change: {{latest_changes[stream.id]}}
+                </p>
+                <p class="card-text">
+                    Stream password: <code>{{stream.password}}</code>
+                </p>
+
+
+
+                {% if stream.is_stateful %}
+                <div class="btn-group mb-2">
+                    {% for state in stream.expected_states.split(' ') %}
+                        <button id="{{stream.name}}-set-{{state}}" class="btn btn-outline-primary">{{state}}</button>
+                    {% endfor %}
+                </div>
+
+                {% for state in stream.expected_states.split(' ') %}
+                    <script>
+                        document.getElementById('{{stream.name}}-set-{{state}}').addEventListener('click', function() {
+                            setState(this, '{{stream.name}}', '{{state}}', '{{stream.password}}');
+                        });
+                    </script>
+                {% endfor %}
+
+                {% else %}
+                <div class="btn-group mb-2">
+                    <button id="{{stream.name}}-trigger" class="btn btn-outline-primary">Trigger</button>
+                </div>
+                <script>
+                    document.getElementById('{{stream.name}}-trigger').addEventListener('click', function() {
+                        setState(this, '{{stream.name}}', 'triggered', '{{stream.password}}');
+                    });
+                </script>
+                {% endif %}
+
+                <div class="">
+                    <button id="{{stream.name}}-delete" class="btn btn-sm btn-outline-danger">Delete</button>
+                    <script>
+                        document.getElementById('{{stream.name}}-delete').addEventListener('click', function() {
+                            if(confirm("Really delete stream {{stream.name}}?")){
+                                url = "{{ url_for('delete_stream', stream=stream.name) }}";
+                                fetch(url, {
+                                    method: 'POST'
+                                }).then(function(response) {
+                                    if (response.ok) {
+                                        window.location.reload();
+                                    } else {
+                                        alert("Error deleting stream {{stream.name}}");
+                                    }
+                                }).catch(function(error) {
+                                    alert("Error deleting stream {{stream.name}}");
+                                }).then(function() {
+                                    window.location.reload();
+                                });
+                            }
+                        });
+                    </script>
+                </div>
+
+            </div>
+        </div>
+    {% endfor %}
+
+    <div>
+        <h2>Create new stream</h2>
+        <form action="{{ url_for('create_stream') }}" method="post">
+            <div class="form-group mb-3">
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="Name">
+            </div>
+            <div class="form-group mb-3">
+                <input type="checkbox" id="stateful" name="stateful" value="true">
+                <label for="stateful">Is stream stateful?</label>
+            </div>
+            <div class="form-group mb-3">
+                <label for="states">Expected states, space-separated (for stateful streams)</label>
+                <input type="states" class="form-control" id="states" name="states" placeholder="stopped starting running stopping">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create</button>
+    </div>
+</div>
+{% endblock %}
